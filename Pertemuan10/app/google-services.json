@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "895877757182",
+    "project_id": "mobilecard-313cb",
+    "storage_bucket": "mobilecard-313cb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:895877757182:android:5135e0527d7decef6f8daf",
+        "android_client_info": {
+          "package_name": "com.learn.mobilecard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD11BBJbHHzle26Bj-0pFH2KGBojo-qKtU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
