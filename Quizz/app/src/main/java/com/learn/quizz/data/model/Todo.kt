@@ -2,7 +2,6 @@ package com.learn.quizz.data.model
 
 import com.google.firebase.firestore.PropertyName
 
-
 data class Todo (
     val id: String = "",
     val title: String = "",
@@ -14,10 +13,17 @@ data class Todo (
 
     @get:PropertyName("priority")
     @set:PropertyName("priority")
-    var priority: String = Priority.MEDIUM.name
+    var priority: String = Priority.MEDIUM.name,
+
+    @get:PropertyName("category")
+    @set:PropertyName("category")
+    var category: String = Category.LAINNYA.name
 )
 
-// TAMBAHKAN ENUM UNTUK PRIORITY
 enum class Priority {
     LOW, MEDIUM, HIGH
+}
+
+enum class Category {
+    KERJA, KULIAH, HOBBY, LAINNYA
 }

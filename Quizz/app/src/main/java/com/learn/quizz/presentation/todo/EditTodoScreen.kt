@@ -7,11 +7,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.learn.quizz.data.model.Category
 import com.learn.quizz.data.model.Priority
 import com.learn.quizz.data.model.Todo
 import java.text.SimpleDateFormat
@@ -21,19 +21,20 @@ import java.util.*
 @Composable
 fun EditTodoScreen(
     todo: Todo,
-    onSave: (String, Priority) -> Unit,
+    onSave: (String, Priority, Category) -> Unit,
     onBack: () -> Unit
 ) {
     var title by remember { mutableStateOf(todo.title) }
     var selectedPriority by remember {
-        mutableStateOf(
-            try {
-                Priority.valueOf(todo.priority)
-            } catch (e: Exception) {
-                Priority.MEDIUM
-            }
-        )
+        mutableStateOf(try { Priority.valueOf(todo.priority) } catch (e: Exception) { Priority.MEDIUM })
     }
+    var selectedCategory by remember {
+        mutableStateOf(try { Category.valueOf(todo.category) } catch (e: Exception) { Category.LAINNYA })
+    }
+
+    // State untuk Dropdown
+    var isPriorityExpanded by remember { mutableStateOf(false) }
+    var isCategoryExpanded by remember { mutableStateOf(false) }
 
     val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
     val dateString = sdf.format(Date(todo.createdAt))
@@ -44,10 +45,7 @@ fun EditTodoScreen(
                 title = { Text("Edit Tugas") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack, // Gunakan AutoMirrored
-                            contentDescription = null
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 }
             )
@@ -59,7 +57,6 @@ fun EditTodoScreen(
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
-            // INPUT TITLE
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
@@ -69,70 +66,99 @@ fun EditTodoScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // PRIORITY SELECTION
-            Text(
-                text = "Priority:",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // PRIORITY OPTIONS - GUNAKAN FILTERCHIP BUKAN COMPACTCHIP
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // DROPDOWN PRIORITY
+            ExposedDropdownMenuBox(
+                expanded = isPriorityExpanded,
+                onExpandedChange = { isPriorityExpanded = it },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Priority.entries.forEach { priority ->
-                    FilterChip(
-                        selected = selectedPriority == priority,
-                        onClick = { selectedPriority = priority },
-                        label = {
-                            Text(
-                                priority.name,
-                                fontSize = 12.sp
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = when (priority) {
-                                    Priority.LOW -> Icons.Default.ArrowDownward
-                                    Priority.MEDIUM -> Icons.Default.HorizontalRule
-                                    Priority.HIGH -> Icons.Default.ArrowUpward
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = when (priority) {
-                                Priority.LOW -> Color(0xFF4CAF50)
-                                Priority.MEDIUM -> Color(0xFF2196F3)
-                                Priority.HIGH -> Color(0xFFF44336) // Perbaikan: 0xFFF44336, bukan 0xFF444330
+                OutlinedTextField(
+                    value = selectedPriority.name,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Priority") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = when (selectedPriority) {
+                                Priority.LOW -> Icons.Default.ArrowDownward
+                                Priority.MEDIUM -> Icons.Default.HorizontalRule
+                                Priority.HIGH -> Icons.Default.ArrowUpward
                             },
-                            selectedLabelColor = Color.White,
-                            selectedLeadingIconColor = Color.White
-                        ),
-                        modifier = Modifier.height(40.dp)
-                    )
+                            contentDescription = null
+                        )
+                    },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriorityExpanded) },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = isPriorityExpanded,
+                    onDismissRequest = { isPriorityExpanded = false }
+                ) {
+                    Priority.entries.forEach { priority ->
+                        DropdownMenuItem(
+                            text = { Text(priority.name) },
+                            onClick = {
+                                selectedPriority = priority
+                                isPriorityExpanded = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = when (priority) {
+                                        Priority.LOW -> Icons.Default.ArrowDownward
+                                        Priority.MEDIUM -> Icons.Default.HorizontalRule
+                                        Priority.HIGH -> Icons.Default.ArrowUpward
+                                    },
+                                    contentDescription = null
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // DROPDOWN CATEGORY
+            ExposedDropdownMenuBox(
+                expanded = isCategoryExpanded,
+                onExpandedChange = { isCategoryExpanded = it },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = selectedCategory.name,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Kategori") },
+                    leadingIcon = { Icon(Icons.Default.Label, contentDescription = null) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCategoryExpanded) },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = isCategoryExpanded,
+                    onDismissRequest = { isCategoryExpanded = false }
+                ) {
+                    Category.entries.forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category.name) },
+                            onClick = {
+                                selectedCategory = category
+                                isCategoryExpanded = false
+                            }
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Dibuat pada: $dateString",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
+            Text("Dibuat pada: $dateString", style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(24.dp))
 
-            // SAVE BUTTON
             Button(
                 onClick = {
                     if (title.isNotBlank()) {
-                        onSave(title, selectedPriority)
+                        onSave(title, selectedPriority, selectedCategory)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

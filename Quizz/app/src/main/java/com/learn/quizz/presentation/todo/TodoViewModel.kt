@@ -2,72 +2,119 @@ package com.learn.quizz.presentation.todo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.learn.quizz.data.model.Category
 import com.learn.quizz.data.model.Priority
 import com.learn.quizz.data.model.Todo
 import com.learn.quizz.data.repository.TodoRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+
+// MODEL DATA UNTUK STATISTIK
+data class TodoStatistics(
+    val total: Int = 0,
+    val completed: Int = 0,
+    val progress: Float = 0f // Nilai 0.0 sampai 1.0
+)
+
+// DEFINISI FILTER
+sealed class TodoFilter {
+    data object All : TodoFilter()
+    data object Active : TodoFilter()
+    data class ByCategory(val category: Category) : TodoFilter()
+}
 
 class TodoViewModel : ViewModel() {
     private val repository = TodoRepository()
-    private val _todos = MutableStateFlow<List<Todo>>(emptyList())
-    val todos = _todos.asStateFlow()
+
+    // 1. DATA SUMBER (RAW DATA)
+    private val _sourceTodos = MutableStateFlow<List<Todo>>(emptyList())
+
+    // 2. STATE PENCARIAN & FILTER
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    private val _filterState = MutableStateFlow<TodoFilter>(TodoFilter.All)
+    val filterState = _filterState.asStateFlow()
+
+    // 3. STATISTIK (Dihitung dari _sourceTodos agar konsisten meski sedang difilter)
+    val statistics: StateFlow<TodoStatistics> = _sourceTodos.map { todos ->
+        val total = todos.size
+        val completed = todos.count { it.isCompleted }
+        val progress = if (total > 0) completed.toFloat() / total else 0f
+
+        TodoStatistics(total, completed, progress)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = TodoStatistics()
+    )
+
+    // 4. LOGIKA PENGGABUNGAN (FILTERING LIST TUGAS)
+    val todos = combine(_sourceTodos, _searchQuery, _filterState) { todos, query, filter ->
+        todos.filter { todo ->
+            // Filter Search
+            val matchesSearch = if (query.isBlank()) true else {
+                todo.title.contains(query, ignoreCase = true)
+            }
+
+            // Filter Kategori/Status
+            val matchesFilter = when (filter) {
+                is TodoFilter.All -> true
+                is TodoFilter.Active -> !todo.isCompleted
+                is TodoFilter.ByCategory -> todo.category == filter.category.name
+            }
+
+            matchesSearch && matchesFilter
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     fun observeTodos(userId: String) {
         viewModelScope.launch {
-            repository.getTodos(userId).collect { todos ->
-                println("DEBUG: Todos updated - ${todos.size} items")
-                _todos.value = todos
+            repository.getTodos(userId).collect {
+                _sourceTodos.value = it
             }
         }
     }
 
-    // PERBAIKAN: Tambahkan parameter priority
-    fun add(userId: String, title: String, priority: Priority = Priority.MEDIUM) = viewModelScope.launch {
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun onFilterChange(filter: TodoFilter) {
+        _filterState.value = filter
+    }
+
+    // --- FUNGSI CRUD ---
+
+    fun add(userId: String, title: String, priority: Priority, category: Category) = viewModelScope.launch {
         try {
-            println("DEBUG: Adding todo - userId: $userId, title: $title, priority: $priority")
-            repository.addTodo(userId, title, priority)
+            repository.addTodo(userId, title, priority, category)
         } catch (e: Exception) {
-            println("ERROR in ViewModel.add: ${e.message}")
             e.printStackTrace()
         }
     }
 
-    // PERBAIKAN: Fungsi toggle yang benar
     fun toggle(userId: String, todoId: String, isCompleted: Boolean) = viewModelScope.launch {
-        try {
-            println("DEBUG: Toggling todo - userId: $userId, todoId: $todoId, isCompleted: $isCompleted")
-            repository.updateTodoStatus(userId, todoId, isCompleted)
-        } catch (e: Exception) {
-            println("ERROR toggling todo: ${e.message}")
-        }
+        repository.updateTodoStatus(userId, todoId, isCompleted)
     }
 
     fun updateTitle(userId: String, todoId: String, newTitle: String) = viewModelScope.launch {
-        try {
-            println("DEBUG: Updating title - userId: $userId, todoId: $todoId, newTitle: $newTitle")
-            repository.updateTodoTitle(userId, todoId, newTitle)
-        } catch (e: Exception) {
-            println("ERROR updating title: ${e.message}")
-        }
-    }
-
-    fun delete(userId: String, todoId: String) = viewModelScope.launch {
-        try {
-            println("DEBUG: Deleting todo - userId: $userId, todoId: $todoId")
-            repository.deleteTodo(userId, todoId)
-        } catch (e: Exception) {
-            println("ERROR deleting todo: ${e.message}")
-        }
+        repository.updateTodoTitle(userId, todoId, newTitle)
     }
 
     fun updatePriority(userId: String, todoId: String, priority: Priority) = viewModelScope.launch {
-        try {
-            println("DEBUG: Updating priority - userId: $userId, todoId: $todoId, priority: $priority")
-            repository.updateTodoPriority(userId, todoId, priority)
-        } catch (e: Exception) {
-            println("ERROR updating priority: ${e.message}")
-        }
+        repository.updateTodoPriority(userId, todoId, priority)
+    }
+
+    fun updateCategory(userId: String, todoId: String, category: Category) = viewModelScope.launch {
+        repository.updateTodoCategory(userId, todoId, category)
+    }
+
+    fun delete(userId: String, todoId: String) = viewModelScope.launch {
+        repository.deleteTodo(userId, todoId)
     }
 }

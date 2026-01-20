@@ -151,4 +151,3 @@ fun DigitalIdCard(userData: UserData?) {
         }
     }
 }
-

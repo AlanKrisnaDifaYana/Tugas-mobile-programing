@@ -57,7 +57,6 @@ class MainActivity : ComponentActivity() {
             navController = navController,
             startDestination = "sign_in"
         ) {
-            // SCREEN SIGN IN
             composable("sign_in") {
                 val signInViewModel: SignInViewModel = viewModel()
                 val state by signInViewModel.state.collectAsStateWithLifecycle()
@@ -90,7 +89,6 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            // SCREEN TODO LIST
             composable("todo_list") {
                 TodoScreen(
                     userData = googleAuthUIClient.getSignedInUser(),
@@ -109,7 +107,6 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            // SCREEN EDIT TODO
             composable(
                 route = "edit_todo/{todoId}",
                 arguments = listOf(navArgument("todoId") { type = NavType.StringType })
@@ -122,11 +119,14 @@ class MainActivity : ComponentActivity() {
                 todo?.let {
                     EditTodoScreen(
                         todo = it,
-                        onSave = { newTitle, newPriority ->
+                        onSave = { newTitle, newPriority, newCategory ->
                             // Update title
                             todoViewModel.updateTitle(userId, todoId, newTitle)
                             // Update priority
                             todoViewModel.updatePriority(userId, todoId, newPriority)
+                            // Update category
+                            todoViewModel.updateCategory(userId, todoId, newCategory)
+
                             navController.popBackStack()
                         },
                         onBack = { navController.popBackStack() }

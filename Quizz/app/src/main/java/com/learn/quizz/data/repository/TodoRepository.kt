@@ -1,9 +1,9 @@
 package com.learn.quizz.data.repository
 
+import com.learn.quizz.data.model.Category
 import com.learn.quizz.data.model.Priority
 import com.learn.quizz.data.model.Todo
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
@@ -22,8 +22,6 @@ class TodoRepository {
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    // Tangani error
-                    println("ERROR getting todos: ${error.message}")
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
@@ -33,7 +31,7 @@ class TodoRepository {
                         try {
                             it.toObject(Todo::class.java)?.copy(id = it.id)
                         } catch (e: Exception) {
-                            null // Skip dokumen yang error
+                            null
                         }
                     }
                     trySend(todos)
@@ -42,15 +40,17 @@ class TodoRepository {
         awaitClose { subscription.remove() }
     }
 
-    suspend fun addTodo(userId: String, title: String, priority: Priority = Priority.MEDIUM) {
+    suspend fun addTodo(userId: String, title: String, priority: Priority, category: Category) {
         try {
-            val todo = Todo(title = title, priority = priority.name)
+            val todo = Todo(
+                title = title,
+                priority = priority.name,
+                category = category.name
+            )
             getTodoCollection(userId).add(todo).await()
-            println("SUCCESS: Todo added for userId: $userId")
         } catch (e: Exception) {
-            println("ERROR adding todo: ${e.message}")
             e.printStackTrace()
-            throw e // Lempar ulang
+            throw e
         }
     }
 
@@ -60,47 +60,26 @@ class TodoRepository {
                 .update("isCompleted", isCompleted)
                 .await()
         } catch (e: Exception) {
-            e.printStackTrace()
-            // Fallback
-            try {
-                getTodoCollection(userId).document(todoId)
-                    .set(mapOf("isCompleted" to isCompleted), SetOptions.merge())
-                    .await()
-            } catch (e2: Exception) {
-                println("Fallback juga gagal: ${e2.message}")
-                throw e2
-            }
+            // Fallback jika dokumen belum ada fieldnya
+            getTodoCollection(userId).document(todoId)
+                .set(mapOf("isCompleted" to isCompleted), SetOptions.merge())
+                .await()
         }
     }
 
     suspend fun updateTodoTitle(userId: String, todoId: String, newTitle: String) {
-        try {
-            getTodoCollection(userId).document(todoId)
-                .update("title", newTitle)
-                .await()
-        } catch (e: Exception) {
-            println("ERROR updating title: ${e.message}")
-            throw e
-        }
+        getTodoCollection(userId).document(todoId).update("title", newTitle).await()
     }
 
     suspend fun updateTodoPriority(userId: String, todoId: String, priority: Priority) {
-        try {
-            getTodoCollection(userId).document(todoId)
-                .update("priority", priority.name)
-                .await()
-        } catch (e: Exception) {
-            println("ERROR updating priority: ${e.message}")
-            throw e
-        }
+        getTodoCollection(userId).document(todoId).update("priority", priority.name).await()
+    }
+
+    suspend fun updateTodoCategory(userId: String, todoId: String, category: Category) {
+        getTodoCollection(userId).document(todoId).update("category", category.name).await()
     }
 
     suspend fun deleteTodo(userId: String, todoId: String) {
-        try {
-            getTodoCollection(userId).document(todoId).delete().await()
-        } catch (e: Exception) {
-            println("ERROR deleting todo: ${e.message}")
-            throw e
-        }
+        getTodoCollection(userId).document(todoId).delete().await()
     }
 }
