@@ -1,4 +1,5 @@
 package com.learn.tugas11.data.model
+
 import com.google.firebase.firestore.PropertyName
 
 
@@ -8,7 +9,7 @@ data class Todo (
 
     @get:PropertyName("isCompleted")
     @set:PropertyName("isCompleted")
-    var isComplited: Boolean = false,
+    var isCompleted: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
 
     @get:PropertyName("priority")

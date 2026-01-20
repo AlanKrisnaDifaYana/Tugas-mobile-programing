@@ -122,8 +122,11 @@ class MainActivity : ComponentActivity() {
                 todo?.let {
                     EditTodoScreen(
                         todo = it,
-                        onSave = { newTitle ->
+                        onSave = { newTitle, newPriority ->
+                            // Update title
                             todoViewModel.updateTitle(userId, todoId, newTitle)
+                            // Update priority
+                            todoViewModel.updatePriority(userId, todoId, newPriority)
                             navController.popBackStack()
                         },
                         onBack = { navController.popBackStack() }

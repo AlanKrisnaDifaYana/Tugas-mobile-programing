@@ -43,6 +43,9 @@ android {
 }
 
 dependencies {
+    // Gunakan versi library yang lebih rendah jika tidak ingin update compileSdk
+    // Atau update semua ke versi yang kompatibel
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -56,6 +59,7 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.firebase.firestore)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -63,9 +67,21 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.0")
-    implementation("androidx.navigation:navigation-compose:2.5.3")
-    implementation("io.coil-kt:coil-compose:2.2.2")
+
+    // Navigation - Gunakan versi yang lebih rendah
+    implementation("androidx.navigation:navigation-compose:2.7.5")
+
+    // ViewModel - Gunakan versi yang lebih rendah
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+
+    // Image Loading
+    implementation("io.coil-kt:coil-compose:2.4.0") // Versi lebih rendah
+
+    // Animations - Hapus jika tidak perlu atau gunakan versi lebih rendah
+    // implementation("androidx.compose.animation:animation:1.5.4") // Versi lama
+    // implementation("androidx.compose.animation:animation-graphics:1.5.4") // Versi lama
+
+    // Material Icons Extended - Gunakan versi lebih rendah
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
 }
