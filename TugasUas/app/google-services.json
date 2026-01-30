@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "621418834562",
+    "project_id": "tugasuas-33d19",
+    "storage_bucket": "tugasuas-33d19.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:621418834562:android:536569224403dee274e29b",
+        "android_client_info": {
+          "package_name": "com.learn.tugasuas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtV9XWdjtStejV62am5QtxMpOHnNbOMnc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
