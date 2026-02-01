@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
                     val currentUser = googleAuthUIClient.getSignedInUser()
                     val startDestination = if (currentUser != null) "home" else "sign_in"
 
-                    // ViewModel dibuat di sini agar bisa di-share
+                    // ViewModel dibuat di sini agar bisa di-share antar screen
                     val homeViewModel: HomeViewModel = viewModel()
 
                     NavHost(navController = navController, startDestination = startDestination) {
@@ -80,24 +80,28 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onAddGameClick = {
-                                        homeViewModel.onAddClick()
+                                        homeViewModel.onAddClick() // Reset state edit jika ada
                                         navController.navigate("add_game")
                                     },
                                     onEditGameClick = { game ->
-                                        homeViewModel.onEditClick(game)
+                                        homeViewModel.onEditClick(game) // Set state edit
                                         navController.navigate("add_game")
                                     }
                                 )
                             }
                         }
 
+                        // --- BAGIAN YANG DIPERBAIKI ---
                         composable("add_game") {
                             val user = googleAuthUIClient.getSignedInUser()
                             if (user != null) {
                                 AddGameScreen(
-                                    userId = user.userId,
-                                    viewModel = homeViewModel,
-                                    onNavigateBack = { navController.popBackStack() }
+                                    navController = navController, // 1. Pass navController
+                                    userId = user.userId,          // 2. Pass userId
+                                    onSaveClick = { game ->        // 3. Callback onSaveClick
+                                        // Panggil fungsi save di ViewModel
+                                        homeViewModel.saveGame(game)
+                                    }
                                 )
                             }
                         }

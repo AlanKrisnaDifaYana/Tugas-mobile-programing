@@ -1,7 +1,9 @@
 package com.learn.tugasuas.presentation.home.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -10,17 +12,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.learn.tugasuas.data.model.Game
+import com.learn.tugasuas.ui.theme.CardBorderGradient
 import com.learn.tugasuas.ui.theme.NeonGreen
 import com.learn.tugasuas.ui.theme.NeonPurple
+import com.learn.tugasuas.ui.theme.SurfaceDark
+import com.learn.tugasuas.ui.theme.TextGray
+import com.learn.tugasuas.ui.theme.TextWhite
 
 @Composable
 fun GameItem(
     game: Game,
-    onEditClick: () -> Unit,   // Callback baru untuk Edit
+    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -28,83 +37,79 @@ fun GameItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, NeonPurple.copy(alpha = 0.3f))
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark),
+        // Memberikan efek border gradasi neon
+        border = BorderStroke(1.dp, CardBorderGradient)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // ... (Bagian atas Header Judul & Status TETAP SAMA seperti sebelumnya) ...
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            // --- Header: Judul & Status ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = game.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = if (game.status == "Playing") NeonGreen else Color.Gray.copy(alpha = 0.3f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = game.status,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
+                        text = game.title,
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
                         fontWeight = FontWeight.Bold,
-                        color = if (game.status == "Playing") Color.Black else Color.White
+                        color = TextWhite
                     )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // ... (Bagian Genre & Rating TETAP SAMA) ...
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = MaterialTheme.shapes.extraSmall,
-                    color = NeonPurple.copy(alpha = 0.1f),
-                ) {
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = game.genre,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = NeonPurple,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        style = MaterialTheme.typography.labelMedium,
+                        color = NeonPurple
                     )
                 }
-                Spacer(modifier = Modifier.weight(1f))
+
+                // Chip Status Custom
+                StatusChip(status = game.status)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // --- Rating & Notes ---
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
-                    tint = Color(0xFFFFD700),
-                    modifier = Modifier.size(18.dp)
+                    tint = Color(0xFFFFD700), // Emas
+                    modifier = Modifier.size(20.dp)
                 )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "${game.rating}/5",
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(start = 4.dp),
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextWhite
                 )
             }
 
             if (game.notes.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "\"${game.notes}\"",
                     style = MaterialTheme.typography.bodySmall,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextGray
                 )
             }
 
-            // --- UPDATE DI SINI: Baris Tombol Aksi ---
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(color = Color.White.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // --- Tombol Aksi ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                // Tombol Edit
                 IconButton(onClick = onEditClick) {
                     Icon(
                         Icons.Default.Edit,
@@ -112,15 +117,34 @@ fun GameItem(
                         tint = NeonPurple
                     )
                 }
-                // Tombol Hapus
                 IconButton(onClick = onDeleteClick) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Delete",
-                        tint = Color.Red.copy(alpha = 0.7f)
+                        tint = Color(0xFFFF5252) // Merah soft
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+fun StatusChip(status: String) {
+    val backgroundColor = if (status == "Playing") NeonGreen.copy(alpha = 0.2f) else Color.Gray.copy(alpha = 0.2f)
+    val textColor = if (status == "Playing") NeonGreen else Color.Gray
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(backgroundColor)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = status,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = textColor
+        )
     }
 }

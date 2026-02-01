@@ -51,7 +51,7 @@ class HomeViewModel : ViewModel() {
                     matchesQuery && matchesCategory
                 }
             }.collect { filteredGames ->
-                // Update hanya list games yang tampil, tanpa mereset query/kategori
+                // Update hanya list games yang tampil agar UI terupdate
                 if (_state.value.games != filteredGames) {
                     _state.value = _state.value.copy(games = filteredGames)
                 }
@@ -74,34 +74,32 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    // --- FUNGSI CRUD (YANG SEBELUMNYA HILANG) ---
-
-    fun addGame(game: Game) {
+    // --- FUNGSI UTAMA: SAVE (ADD / UPDATE) ---
+    // Fungsi ini dipanggil dari AddGameScreen melalui MainActivity
+    fun saveGame(game: Game) {
         viewModelScope.launch {
             try {
-                repository.addGame(game)
-                // Tidak perlu reload manual karena loadGames meng-observe Flow dari Repository
+                if (gameToEdit != null) {
+                    // Jika sedang edit, pakai ID dari game yang diedit
+                    val updatedGame = game.copy(id = gameToEdit!!.id)
+                    repository.updateGame(updatedGame)
+                    gameToEdit = null // Reset edit mode setelah selesai
+                } else {
+                    // Jika baru, langsung add (ID akan digenerate di Repository)
+                    repository.addGame(game)
+                }
             } catch (e: Exception) {
-                _state.value = _state.value.copy(errorMessage = "Gagal tambah: ${e.message}")
+                _state.value = _state.value.copy(errorMessage = "Gagal menyimpan: ${e.message}")
             }
         }
     }
 
-    fun updateGame(game: Game) {
-        viewModelScope.launch {
-            try {
-                repository.updateGame(game)
-                // Reset edit mode setelah update selesai (opsional)
-                gameToEdit = null
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(errorMessage = "Gagal update: ${e.message}")
-            }
-        }
-    }
-
+    // --- FUNGSI DELETE ---
     fun deleteGame(gameId: String) {
         viewModelScope.launch {
-            try { repository.deleteGame(gameId) } catch (e: Exception) {
+            try {
+                repository.deleteGame(gameId)
+            } catch (e: Exception) {
                 _state.value = _state.value.copy(errorMessage = "Gagal hapus: ${e.message}")
             }
         }
@@ -110,17 +108,21 @@ class HomeViewModel : ViewModel() {
     // --- FUNGSI INTERAKSI UI ---
 
     fun onSearchQueryChange(newQuery: String) {
+        // Kita hanya mengubah state query, init block di atas akan otomatis memfilter list
         _state.value = _state.value.copy(searchQuery = newQuery)
     }
 
     fun onCategorySelected(category: String) {
+        // Kita hanya mengubah state category, init block di atas akan otomatis memfilter list
         _state.value = _state.value.copy(selectedCategory = category)
     }
 
+    // Dipanggil saat tombol (+) ditekan
     fun onAddClick() {
         gameToEdit = null
     }
 
+    // Dipanggil saat tombol Edit (pensil) ditekan di item game
     fun onEditClick(game: Game) {
         gameToEdit = game
     }

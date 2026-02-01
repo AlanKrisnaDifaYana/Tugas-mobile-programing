@@ -1,159 +1,254 @@
 package com.learn.tugasuas.presentation.add_game
 
-import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.learn.tugasuas.data.model.Game
-import com.learn.tugasuas.presentation.home.HomeViewModel
+import com.learn.tugasuas.ui.theme.NeonPurple
+import com.learn.tugasuas.ui.theme.SurfaceDark
+import com.learn.tugasuas.ui.theme.TextWhite
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddGameScreen(
-    userId: String,
-    onNavigateBack: () -> Unit,
-    viewModel: HomeViewModel // <--- Parameter ini KUNCI agar MainActivity tidak merah
+    navController: NavController,
+    onSaveClick: (Game) -> Unit,
+    userId: String
 ) {
-    val context = LocalContext.current
-    val gameToEdit = viewModel.gameToEdit
-    val isEditMode = gameToEdit != null
+    // State untuk input form
+    var title by remember { mutableStateOf("") }
 
-    var title by remember { mutableStateOf(gameToEdit?.title ?: "") }
-    var selectedGenre by remember { mutableStateOf(gameToEdit?.genre ?: "Action") }
-    var selectedStatus by remember { mutableStateOf(gameToEdit?.status ?: "Playing") }
-    var rating by remember { mutableIntStateOf(gameToEdit?.rating ?: 3) }
-    var notes by remember { mutableStateOf(gameToEdit?.notes ?: "") }
+    // --- GANTI DI SINI: Rating kembali menjadi Integer (0) ---
+    var rating by remember { mutableIntStateOf(0) }
 
-    val genres = listOf("Action", "RPG", "FPS", "Puzzle", "Sports", "Adventure")
-    val statuses = listOf("Backlog", "Playing", "Finished", "Dropped")
+    var notes by remember { mutableStateOf("") }
+
+    // --- BAGIAN DROP DOWN GENRE ---
+    val genreOptions = listOf("Action", "RPG", "Strategy", "FPS", "Adventure", "Sports", "Racing", "Puzzle")
+    var genre by remember { mutableStateOf(genreOptions[0]) }
+    var expandedGenre by remember { mutableStateOf(false) }
+
+    // --- BAGIAN DROP DOWN STATUS ---
+    val statusOptions = listOf("Playing", "Completed", "On Hold", "Dropped", "Plan to Play")
+    var status by remember { mutableStateOf(statusOptions[0]) }
+    var expandedStatus by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditMode) "Edit Game" else "Tambah Game Baru") },
+                title = { Text("Add New Game", color = TextWhite, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextWhite)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceDark)
             )
-        }
+        },
+        containerColor = Color.Black
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Form Input
+            // 1. Input Title
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Judul Game") },
+                label = { Text("Game Title") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = NeonPurple,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedTextColor = TextWhite,
+                    unfocusedTextColor = TextWhite,
+                    focusedLabelColor = NeonPurple,
+                    unfocusedLabelColor = Color.Gray
+                )
             )
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // Status Chips
-            Text("Status:", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                statuses.forEach { status ->
-                    FilterChip(
-                        selected = selectedStatus == status,
-                        onClick = { selectedStatus = status },
-                        label = { Text(status) },
-                        leadingIcon = if (selectedStatus == status) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                        } else null
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Genre Chips
-            androidx.compose.foundation.layout.FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // 2. Input Genre (DROP DOWN)
+            ExposedDropdownMenuBox(
+                expanded = expandedGenre,
+                onExpandedChange = { expandedGenre = !expandedGenre },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                genres.forEach { genre ->
-                    FilterChip(
-                        selected = selectedGenre == genre,
-                        onClick = { selectedGenre = genre },
-                        label = { Text(genre) }
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Rating
-            Text("Rating: $rating/5", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                (1..5).forEach { star ->
-                    IconButton(onClick = { rating = star }) {
-                        Icon(
-                            imageVector = if (star <= rating) Icons.Default.Star else Icons.Outlined.Star,
-                            contentDescription = "Star $star",
-                            tint = if (star <= rating) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurfaceVariant
+                OutlinedTextField(
+                    readOnly = true,
+                    value = genre,
+                    onValueChange = { },
+                    label = { Text("Genre") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGenre) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NeonPurple,
+                        unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = TextWhite,
+                        unfocusedTextColor = TextWhite,
+                        focusedLabelColor = NeonPurple,
+                        unfocusedLabelColor = Color.Gray
+                    ),
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedGenre,
+                    onDismissRequest = { expandedGenre = false }
+                ) {
+                    genreOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                genre = option
+                                expandedGenre = false
+                            }
                         )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // Notes
+            // 3. Input Status (DROP DOWN)
+            ExposedDropdownMenuBox(
+                expanded = expandedStatus,
+                onExpandedChange = { expandedStatus = !expandedStatus },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    readOnly = true,
+                    value = status,
+                    onValueChange = { },
+                    label = { Text("Status") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedStatus) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NeonPurple,
+                        unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = TextWhite,
+                        unfocusedTextColor = TextWhite,
+                        focusedLabelColor = NeonPurple,
+                        unfocusedLabelColor = Color.Gray
+                    ),
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedStatus,
+                    onDismissRequest = { expandedStatus = false }
+                ) {
+                    statusOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                status = option
+                                expandedStatus = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            // 4. Input Rating (STAR INTERACTIVE)
+            Column {
+                Text(
+                    text = "Rating",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = NeonPurple,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    for (i in 1..5) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Rate $i",
+                            tint = if (i <= rating) Color(0xFFFFD700) else Color.Gray.copy(alpha = 0.5f), // Emas jika aktif
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { rating = i } // Klik untuk ubah rating
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "$rating/5",
+                        color = TextWhite,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+
+            // 5. Input Notes
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Catatan / Review Singkat") },
-                modifier = Modifier.fillMaxWidth().height(120.dp),
-                maxLines = 5
+                label = { Text("Notes") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                shape = RoundedCornerShape(12.dp),
+                maxLines = 5,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = NeonPurple,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedTextColor = TextWhite,
+                    unfocusedTextColor = TextWhite,
+                    focusedLabelColor = NeonPurple,
+                    unfocusedLabelColor = Color.Gray
+                )
             )
-            Spacer(modifier = Modifier.height(24.dp))
 
-            // Tombol Simpan
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Tombol Save
             Button(
                 onClick = {
-                    if (title.isBlank()) {
-                        Toast.makeText(context, "Judul tidak boleh kosong!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        if (isEditMode) {
-                            val updatedGame = gameToEdit!!.copy(
-                                title = title, status = selectedStatus, genre = selectedGenre, rating = rating, notes = notes
-                            )
-                            viewModel.updateGame(updatedGame)
-                            Toast.makeText(context, "Berhasil update!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            val newGame = Game(
-                                userId = userId, title = title, status = selectedStatus, genre = selectedGenre, rating = rating, notes = notes
-                            )
-                            viewModel.addGame(newGame)
-                            Toast.makeText(context, "Berhasil simpan!", Toast.LENGTH_SHORT).show()
-                        }
-                        onNavigateBack()
+                    if (title.isNotEmpty() && genre.isNotEmpty()) {
+                        val newGame = Game(
+                            id = System.currentTimeMillis().toString(),
+                            userId = userId,
+                            title = title,
+                            genre = genre,
+                            status = status,
+                            rating = rating, // Menggunakan nilai Int langsung
+                            notes = notes
+                        )
+                        onSaveClick(newGame)
+                        navController.popBackStack()
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = NeonPurple),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text(if (isEditMode) "Update Game" else "Simpan ke Jurnal")
+                Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Save Game", color = Color.Black, fontWeight = FontWeight.Bold)
             }
         }
     }
