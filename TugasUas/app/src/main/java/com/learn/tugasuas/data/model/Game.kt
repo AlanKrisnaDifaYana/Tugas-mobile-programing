@@ -10,7 +10,8 @@ data class Game(
     val category: String = "General", // Field baru untuk kategori
     val genre: String = "Action",
     val rating: Int = 0,
-    val notes: String = ""
+    val notes: String = "",
+    val imageUrl: String = "" // Field baru untuk URL Gambar
 )
 
 // Model baru untuk Kategori

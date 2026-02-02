@@ -1,6 +1,7 @@
+// alankrisnadifayana/tugas-mobile-programing/Tugas-mobile-programing-main/TugasUas/app/src/main/java/com/learn/tugasuas/presentation/add_game/AddGameScreen.kt
+
 package com.learn.tugasuas.presentation.add_game
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +33,7 @@ fun AddGameScreen(
 ) {
     // State untuk input form
     var title by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf("") } // State baru untuk Image URL
 
     // --- GANTI DI SINI: Rating kembali menjadi Integer (0) ---
     var rating by remember { mutableIntStateOf(0) }
@@ -75,6 +77,23 @@ fun AddGameScreen(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Game Title") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = NeonPurple,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedTextColor = TextWhite,
+                    unfocusedTextColor = TextWhite,
+                    focusedLabelColor = NeonPurple,
+                    unfocusedLabelColor = Color.Gray
+                )
+            )
+
+            // 1.5 Input Image URL (BARU)
+            OutlinedTextField(
+                value = imageUrl,
+                onValueChange = { imageUrl = it },
+                label = { Text("Image URL") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -234,7 +253,8 @@ fun AddGameScreen(
                             genre = genre,
                             status = status,
                             rating = rating, // Menggunakan nilai Int langsung
-                            notes = notes
+                            notes = notes,
+                            imageUrl = imageUrl // Menyimpan URL gambar ke object Game
                         )
                         onSaveClick(newGame)
                         navController.popBackStack()

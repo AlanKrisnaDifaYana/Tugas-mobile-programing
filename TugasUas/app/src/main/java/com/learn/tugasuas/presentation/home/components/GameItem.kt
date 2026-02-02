@@ -1,3 +1,5 @@
+// alankrisnadifayana/tugas-mobile-programing/Tugas-mobile-programing-main/TugasUas/app/src/main/java/com/learn/tugasuas/presentation/home/components/GameItem.kt
+
 package com.learn.tugasuas.presentation.home.components
 
 import androidx.compose.foundation.BorderStroke
@@ -13,11 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.learn.tugasuas.data.model.Game
 import com.learn.tugasuas.ui.theme.CardBorderGradient
 import com.learn.tugasuas.ui.theme.NeonGreen
@@ -47,6 +50,20 @@ fun GameItem(
             modifier = Modifier
                 .padding(16.dp)
         ) {
+            // --- TAMPILKAN GAMBAR JIKA URL TIDAK KOSONG (BARU) ---
+            if (game.imageUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = game.imageUrl,
+                    contentDescription = "Game Image",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp) // Tinggi gambar
+                        .clip(RoundedCornerShape(12.dp))
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             // --- Header: Judul & Status ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
