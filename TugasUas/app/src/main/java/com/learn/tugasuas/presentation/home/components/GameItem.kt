@@ -1,9 +1,7 @@
-// alankrisnadifayana/tugas-mobile-programing/Tugas-mobile-programing-main/TugasUas/app/src/main/java/com/learn/tugasuas/presentation/home/components/GameItem.kt
-
 package com.learn.tugasuas.presentation.home.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,18 +13,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.learn.tugasuas.data.model.Game
-import com.learn.tugasuas.ui.theme.CardBorderGradient
 import com.learn.tugasuas.ui.theme.NeonGreen
 import com.learn.tugasuas.ui.theme.NeonPurple
-import com.learn.tugasuas.ui.theme.SurfaceDark
-import com.learn.tugasuas.ui.theme.TextGray
+import com.learn.tugasuas.ui.theme.NeonBlue
 import com.learn.tugasuas.ui.theme.TextWhite
 
 @Composable
@@ -36,110 +35,149 @@ fun GameItem(
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // --- FITUR: GLOWING BORDER UNTUK YANG SEDANG DIMAINKAN ---
+    val cardModifier = if (game.status == "Playing") {
+        modifier
+            .border(
+                width = 2.dp,
+                brush = Brush.linearGradient(listOf(NeonGreen, NeonBlue)), // Efek gradasi border
+                shape = RoundedCornerShape(24.dp)
+            )
+    } else {
+        modifier
+    }
+
     Card(
-        modifier = modifier
+        modifier = cardModifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-        // Memberikan efek border gradasi neon
-        border = BorderStroke(1.dp, CardBorderGradient)
+            .height(260.dp) // Tinggi disesuaikan agar muat notes
+            .padding(vertical = 10.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Black)
     ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-        ) {
-            // --- TAMPILKAN GAMBAR JIKA URL TIDAK KOSONG (BARU) ---
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 1. Background Image Full (Poster Style)
             if (game.imageUrl.isNotEmpty()) {
                 AsyncImage(
                     model = game.imageUrl,
-                    contentDescription = "Game Image",
+                    contentDescription = "Game Cover",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp) // Tinggi gambar
-                        .clip(RoundedCornerShape(12.dp))
+                    modifier = Modifier.fillMaxSize()
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+            } else {
+                // Placeholder background jika tidak ada gambar
+                Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2D2D2D)))
             }
 
-            // --- Header: Judul & Status ---
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = game.title,
-                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
-                        fontWeight = FontWeight.Bold,
-                        color = TextWhite
+            // 2. Gradient Overlay (Agar teks terbaca jelas)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.3f),
+                                Color.Black.copy(alpha = 0.95f) // Bawah gelap pekat
+                            ),
+                            startY = 50f
+                        )
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = game.genre,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = NeonPurple
-                    )
-                }
+            )
 
-                // Chip Status Custom
+            // 3. Status Chip (Kiri Atas)
+            Box(modifier = Modifier.padding(16.dp).align(Alignment.TopStart)) {
                 StatusChip(status = game.status)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // --- Rating & Notes ---
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // 4. Rating (Kanan Atas)
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.TopEnd)
+                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
-                    imageVector = Icons.Default.Star,
+                    Icons.Default.Star,
                     contentDescription = null,
-                    tint = Color(0xFFFFD700), // Emas
-                    modifier = Modifier.size(20.dp)
+                    tint = Color(0xFFFFD700), // Warna Emas
+                    modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "${game.rating}/5",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextWhite
+                    text = game.rating.toString(),
+                    color = TextWhite,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
                 )
             }
 
-            if (game.notes.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "\"${game.notes}\"",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    color = TextGray
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Divider(color = Color.White.copy(alpha = 0.1f))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // --- Tombol Aksi ---
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+            // 5. Informasi Game (Bagian Bawah)
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(20.dp)
+                    .fillMaxWidth()
             ) {
-                IconButton(onClick = onEditClick) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Edit",
-                        tint = NeonPurple
+                // Genre
+                Text(
+                    text = game.genre.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = NeonPurple,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp
+                )
+
+                // Judul
+                Text(
+                    text = game.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextWhite,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                // Notes / Catatan
+                if (game.notes.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "\"${game.notes}\"",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextWhite.copy(alpha = 0.8f),
+                        fontStyle = FontStyle.Italic,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 13.sp
                     )
                 }
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = Color(0xFFFF5252) // Merah soft
-                    )
+
+                // Tombol Aksi (Edit & Delete)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(onClick = onEditClick, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            tint = TextWhite.copy(alpha = 0.8f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(onClick = onDeleteClick, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = Color(0xFFFF5252),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }
@@ -148,13 +186,15 @@ fun GameItem(
 
 @Composable
 fun StatusChip(status: String) {
-    val backgroundColor = if (status == "Playing") NeonGreen.copy(alpha = 0.2f) else Color.Gray.copy(alpha = 0.2f)
-    val textColor = if (status == "Playing") NeonGreen else Color.Gray
+    val backgroundColor = if (status == "Playing") NeonGreen.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.2f)
+    val textColor = if (status == "Playing") NeonGreen else Color.LightGray
+    val borderColor = if (status == "Playing") NeonGreen.copy(alpha = 0.5f) else Color.Transparent
 
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(backgroundColor)
+            .border(1.dp, borderColor, RoundedCornerShape(50))
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
