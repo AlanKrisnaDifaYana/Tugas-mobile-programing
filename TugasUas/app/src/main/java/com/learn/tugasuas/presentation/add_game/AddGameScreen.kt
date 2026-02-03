@@ -14,7 +14,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Image // Icon Galeri
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Link // Icon untuk Link
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -42,23 +43,24 @@ fun AddGameScreen(
     userId: String,
     gameToEdit: Game? = null
 ) {
-    // Context & Scope
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-
-    // Repository (Sebaiknya di-inject via ViewModel, tapi untuk tugas ini kita instansiasi disini)
     val repository = remember { GameRepository() }
 
-    // State Data Form
+    // --- STATE DATA ---
     var title by remember { mutableStateOf(gameToEdit?.title ?: "") }
 
-    // Logic Gambar: Kita butuh 2 state. Satu untuk text URL, satu untuk Uri lokal (dari galeri)
+    // State untuk Gambar
     var imageUrl by remember { mutableStateOf(gameToEdit?.imageUrl ?: "") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    // State untuk Link Game (Steam/Web) -> FITUR YANG DIMINTA
+    var gameUrl by remember { mutableStateOf(gameToEdit?.gameUrl ?: "") }
 
     var rating by remember { mutableIntStateOf(gameToEdit?.rating ?: 0) }
     var notes by remember { mutableStateOf(gameToEdit?.notes ?: "") }
 
+    // Dropdown Data
     val genreOptions = listOf("Action", "RPG", "Strategy", "FPS", "Adventure", "Sports", "Racing", "Puzzle")
     var genre by remember { mutableStateOf(if (gameToEdit != null && genreOptions.contains(gameToEdit.genre)) gameToEdit.genre else genreOptions[0]) }
     var expandedGenre by remember { mutableStateOf(false) }
@@ -67,29 +69,25 @@ fun AddGameScreen(
     var status by remember { mutableStateOf(if (gameToEdit != null && statusOptions.contains(gameToEdit.status)) gameToEdit.status else statusOptions[0]) }
     var expandedStatus by remember { mutableStateOf(false) }
 
-    // State UI
+    // UI State
     var showSaveDialog by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) } // State Loading
+    var isLoading by remember { mutableStateOf(false) }
 
     val screenTitle = if (gameToEdit != null) "Edit Game" else "Add New Game"
 
-    // Launcher untuk membuka Galeri Foto
+    // Launcher Galeri
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             if (uri != null) {
                 selectedImageUri = uri
-                // Kita update text field agar user tahu gambar terpilih (bisa diganti nama file)
                 imageUrl = "Image selected from Gallery"
             }
         }
     )
 
-    // Handle tombol Back
-    BackHandler {
-        showDiscardDialog = true
-    }
+    BackHandler { showDiscardDialog = true }
 
     Scaffold(
         topBar = {
@@ -105,7 +103,6 @@ fun AddGameScreen(
         },
         containerColor = Color.Black
     ) { paddingValues ->
-        // Jika sedang loading upload, tampilkan indikator
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = NeonPurple)
@@ -119,7 +116,7 @@ fun AddGameScreen(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Input Title
+                // 1. Title
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -133,19 +130,18 @@ fun AddGameScreen(
                     )
                 )
 
-                // Input Image URL dengan Tombol Galeri
+                // 2. Image URL / Gallery
                 OutlinedTextField(
                     value = imageUrl,
                     onValueChange = {
                         imageUrl = it
-                        selectedImageUri = null // Reset URI jika user mengetik manual
+                        selectedImageUri = null
                     },
                     label = { Text("Image URL or Select from Gallery") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     trailingIcon = {
                         IconButton(onClick = {
-                            // Buka Galeri (Hanya Image)
                             photoPickerLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
@@ -160,83 +156,111 @@ fun AddGameScreen(
                     )
                 )
 
-                // Genre Dropdown
-                ExposedDropdownMenuBox(
-                    expanded = expandedGenre,
-                    onExpandedChange = { expandedGenre = !expandedGenre },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedTextField(
-                        readOnly = true,
-                        value = genre,
-                        onValueChange = { },
-                        label = { Text("Genre") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGenre) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = NeonPurple, unfocusedBorderColor = Color.Gray,
-                            focusedTextColor = TextWhite, unfocusedTextColor = TextWhite,
-                            focusedLabelColor = NeonPurple, unfocusedLabelColor = Color.Gray
-                        ),
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                // 3. Game URL (Link Steam/Website) - FITUR BARU
+                OutlinedTextField(
+                    value = gameUrl,
+                    onValueChange = { gameUrl = it },
+                    label = { Text("Game Link (e.g. Steam / Play Store)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    trailingIcon = {
+                        Icon(Icons.Default.Link, contentDescription = "Link", tint = NeonPurple)
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NeonPurple, unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = TextWhite, unfocusedTextColor = TextWhite,
+                        focusedLabelColor = NeonPurple, unfocusedLabelColor = Color.Gray
                     )
-                    ExposedDropdownMenu(
+                )
+
+                // 4. Genre & Status (Sejajar)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Genre
+                    ExposedDropdownMenuBox(
                         expanded = expandedGenre,
-                        onDismissRequest = { expandedGenre = false }
+                        onExpandedChange = { expandedGenre = !expandedGenre },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        genreOptions.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option) },
-                                onClick = { genre = option; expandedGenre = false }
-                            )
+                        OutlinedTextField(
+                            readOnly = true,
+                            value = genre,
+                            onValueChange = { },
+                            label = { Text("Genre") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGenre) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = NeonPurple, unfocusedBorderColor = Color.Gray,
+                                focusedTextColor = TextWhite, unfocusedTextColor = TextWhite,
+                                focusedLabelColor = NeonPurple, unfocusedLabelColor = Color.Gray
+                            ),
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedGenre,
+                            onDismissRequest = { expandedGenre = false }
+                        ) {
+                            genreOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = { genre = option; expandedGenre = false }
+                                )
+                            }
                         }
                     }
-                }
 
-                // Status Dropdown
-                ExposedDropdownMenuBox(
-                    expanded = expandedStatus,
-                    onExpandedChange = { expandedStatus = !expandedStatus },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedTextField(
-                        readOnly = true,
-                        value = status,
-                        onValueChange = { },
-                        label = { Text("Status") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedStatus) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = NeonPurple, unfocusedBorderColor = Color.Gray,
-                            focusedTextColor = TextWhite, unfocusedTextColor = TextWhite,
-                            focusedLabelColor = NeonPurple, unfocusedLabelColor = Color.Gray
-                        ),
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    ExposedDropdownMenu(
+                    // Status
+                    ExposedDropdownMenuBox(
                         expanded = expandedStatus,
-                        onDismissRequest = { expandedStatus = false }
+                        onExpandedChange = { expandedStatus = !expandedStatus },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        statusOptions.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option) },
-                                onClick = { status = option; expandedStatus = false }
-                            )
+                        OutlinedTextField(
+                            readOnly = true,
+                            value = status,
+                            onValueChange = { },
+                            label = { Text("Status") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedStatus) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = NeonPurple, unfocusedBorderColor = Color.Gray,
+                                focusedTextColor = TextWhite, unfocusedTextColor = TextWhite,
+                                focusedLabelColor = NeonPurple, unfocusedLabelColor = Color.Gray
+                            ),
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedStatus,
+                            onDismissRequest = { expandedStatus = false }
+                        ) {
+                            statusOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = { status = option; expandedStatus = false }
+                                )
+                            }
                         }
                     }
                 }
 
-                // Rating
+                // 5. Rating
                 Column {
                     Text("Rating", style = MaterialTheme.typography.labelLarge, color = NeonPurple, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         for (i in 1..5) {
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = "Rate $i",
                                 tint = if (i <= rating) Color(0xFFFFD700) else Color.Gray.copy(alpha = 0.5f),
-                                modifier = Modifier.size(40.dp).clickable { rating = i }
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clickable { rating = i }
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
@@ -244,7 +268,7 @@ fun AddGameScreen(
                     }
                 }
 
-                // Notes
+                // 6. Notes
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
@@ -261,7 +285,7 @@ fun AddGameScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Tombol SAVE
+                // 7. Save Button
                 Button(
                     onClick = {
                         if (title.isNotEmpty() && genre.isNotEmpty()) {
@@ -276,14 +300,16 @@ fun AddGameScreen(
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (gameToEdit != null) "Update Game" else "Save Game", color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (gameToEdit != null) "Update Game" else "Save Game",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
 
         // --- DIALOGS ---
-
-        // Dialog Save
         if (showSaveDialog) {
             AlertDialog(
                 onDismissRequest = { showSaveDialog = false },
@@ -295,26 +321,18 @@ fun AddGameScreen(
                     TextButton(
                         onClick = {
                             showSaveDialog = false
-                            isLoading = true // Mulai Loading
+                            isLoading = true
 
                             scope.launch {
-                                // Logika Upload Gambar
+                                // Logic Upload Gambar (tetap ada)
                                 val finalImageUrl = if (selectedImageUri != null) {
-                                    // Jika user memilih gambar dari galeri, upload dulu
                                     val uploadedUrl = repository.uploadImageToStorage(selectedImageUri!!)
-                                    if (uploadedUrl.isNotEmpty()) {
-                                        uploadedUrl
-                                    } else {
-                                        // Handle error upload
-                                        Toast.makeText(context, "Failed to upload image", Toast.LENGTH_SHORT).show()
-                                        imageUrl // Gunakan nilai lama/teks
-                                    }
+                                    if (uploadedUrl.isNotEmpty()) uploadedUrl else imageUrl
                                 } else {
-                                    // Jika tidak ada gambar baru dari galeri, pakai string yang ada di text field
                                     imageUrl
                                 }
 
-                                // Simpan Game Data
+                                // Membuat Object Game dengan gameUrl
                                 val idToUse = gameToEdit?.id ?: System.currentTimeMillis().toString()
                                 val newGame = Game(
                                     id = idToUse,
@@ -324,10 +342,11 @@ fun AddGameScreen(
                                     status = status,
                                     rating = rating,
                                     notes = notes,
-                                    imageUrl = finalImageUrl // Pakai URL hasil upload atau input manual
+                                    imageUrl = finalImageUrl,
+                                    gameUrl = gameUrl // <--- MENYIMPAN LINK GAME
                                 )
 
-                                onSaveClick(newGame) // Panggil callback simpan (ke ViewModel/Repository)
+                                onSaveClick(newGame)
                                 isLoading = false
                                 navController.popBackStack()
                             }
@@ -344,7 +363,6 @@ fun AddGameScreen(
             )
         }
 
-        // Dialog Discard (Back)
         if (showDiscardDialog) {
             AlertDialog(
                 onDismissRequest = { showDiscardDialog = false },

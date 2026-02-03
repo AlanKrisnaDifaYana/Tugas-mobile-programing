@@ -11,7 +11,8 @@ data class Game(
     val genre: String = "Action",
     val rating: Int = 0,
     val notes: String = "",
-    val imageUrl: String = "" // Field baru untuk URL Gambar
+    val imageUrl: String = "", // Field baru untuk URL Gambar
+    val gameUrl: String = ""
 )
 
 // Model baru untuk Kategori
