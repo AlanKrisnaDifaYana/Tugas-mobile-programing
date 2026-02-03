@@ -29,31 +29,33 @@ import com.learn.tugasuas.ui.theme.TextWhite
 fun AddGameScreen(
     navController: NavController,
     onSaveClick: (Game) -> Unit,
-    userId: String
+    userId: String,
+    gameToEdit: Game? = null // [PERBAIKAN 1] Tambahkan parameter ini
 ) {
-    // State untuk input form
-    var title by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf("") } // State baru untuk Image URL
+    // [PERBAIKAN 2] Inisialisasi state dengan data dari gameToEdit jika ada (Pre-fill data)
+    var title by remember { mutableStateOf(gameToEdit?.title ?: "") }
+    var imageUrl by remember { mutableStateOf(gameToEdit?.imageUrl ?: "") }
+    var rating by remember { mutableIntStateOf(gameToEdit?.rating ?: 0) }
+    var notes by remember { mutableStateOf(gameToEdit?.notes ?: "") }
 
-    // --- GANTI DI SINI: Rating kembali menjadi Integer (0) ---
-    var rating by remember { mutableIntStateOf(0) }
-
-    var notes by remember { mutableStateOf("") }
-
-    // --- BAGIAN DROP DOWN GENRE ---
+    // Dropdown Genre
     val genreOptions = listOf("Action", "RPG", "Strategy", "FPS", "Adventure", "Sports", "Racing", "Puzzle")
-    var genre by remember { mutableStateOf(genreOptions[0]) }
+    // Jika genre yang diedit ada di list, pakai itu. Jika tidak, default ke index 0
+    var genre by remember { mutableStateOf(if (gameToEdit != null && genreOptions.contains(gameToEdit.genre)) gameToEdit.genre else genreOptions[0]) }
     var expandedGenre by remember { mutableStateOf(false) }
 
-    // --- BAGIAN DROP DOWN STATUS ---
+    // Dropdown Status
     val statusOptions = listOf("Playing", "Completed", "On Hold", "Dropped", "Plan to Play")
-    var status by remember { mutableStateOf(statusOptions[0]) }
+    var status by remember { mutableStateOf(if (gameToEdit != null && statusOptions.contains(gameToEdit.status)) gameToEdit.status else statusOptions[0]) }
     var expandedStatus by remember { mutableStateOf(false) }
+
+    // Ubah judul TopBar agar dinamis
+    val screenTitle = if (gameToEdit != null) "Edit Game" else "Add New Game"
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add New Game", color = TextWhite, fontWeight = FontWeight.Bold) },
+                title = { Text(screenTitle, color = TextWhite, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextWhite)
@@ -89,7 +91,7 @@ fun AddGameScreen(
                 )
             )
 
-            // 1.5 Input Image URL (BARU)
+            // 1.5 Input Image URL
             OutlinedTextField(
                 value = imageUrl,
                 onValueChange = { imageUrl = it },
@@ -188,7 +190,7 @@ fun AddGameScreen(
                 }
             }
 
-            // 4. Input Rating (STAR INTERACTIVE)
+            // 4. Input Rating
             Column {
                 Text(
                     text = "Rating",
@@ -205,10 +207,10 @@ fun AddGameScreen(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = "Rate $i",
-                            tint = if (i <= rating) Color(0xFFFFD700) else Color.Gray.copy(alpha = 0.5f), // Emas jika aktif
+                            tint = if (i <= rating) Color(0xFFFFD700) else Color.Gray.copy(alpha = 0.5f),
                             modifier = Modifier
                                 .size(40.dp)
-                                .clickable { rating = i } // Klik untuk ubah rating
+                                .clickable { rating = i }
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
@@ -246,15 +248,18 @@ fun AddGameScreen(
             Button(
                 onClick = {
                     if (title.isNotEmpty() && genre.isNotEmpty()) {
+                        // [PERBAIKAN 3] Gunakan ID dari gameToEdit jika ada, jika tidak buat ID baru
+                        val idToUse = gameToEdit?.id ?: System.currentTimeMillis().toString()
+
                         val newGame = Game(
-                            id = System.currentTimeMillis().toString(),
+                            id = idToUse,
                             userId = userId,
                             title = title,
                             genre = genre,
                             status = status,
-                            rating = rating, // Menggunakan nilai Int langsung
+                            rating = rating,
                             notes = notes,
-                            imageUrl = imageUrl // Menyimpan URL gambar ke object Game
+                            imageUrl = imageUrl
                         )
                         onSaveClick(newGame)
                         navController.popBackStack()
@@ -268,7 +273,8 @@ fun AddGameScreen(
             ) {
                 Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Save Game", color = Color.Black, fontWeight = FontWeight.Bold)
+                // Ubah teks tombol dinamis
+                Text(if (gameToEdit != null) "Update Game" else "Save Game", color = Color.Black, fontWeight = FontWeight.Bold)
             }
         }
     }

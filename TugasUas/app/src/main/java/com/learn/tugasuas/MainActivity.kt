@@ -43,11 +43,12 @@ class MainActivity : ComponentActivity() {
                     val currentUser = googleAuthUIClient.getSignedInUser()
                     val startDestination = if (currentUser != null) "home" else "sign_in"
 
-                    // ViewModel dibuat di sini agar bisa di-share antar screen
+                    // ViewModel dibuat di level atas NavHost agar state (seperti gameToEdit) bisa dibagi antar screen
                     val homeViewModel: HomeViewModel = viewModel()
 
                     NavHost(navController = navController, startDestination = startDestination) {
 
+                        // --- SCREEN 1: SIGN IN ---
                         composable("sign_in") {
                             val viewModel: SignInViewModel = viewModel()
                             val state by viewModel.state.collectAsStateWithLifecycle()
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
                             })
                         }
 
+                        // --- SCREEN 2: HOME ---
                         composable("home") {
                             val user = googleAuthUIClient.getSignedInUser()
                             if (user != null) {
@@ -80,26 +82,27 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onAddGameClick = {
-                                        homeViewModel.onAddClick() // Reset state edit jika ada
+                                        homeViewModel.onAddClick() // PENTING: Reset gameToEdit jadi null untuk mode tambah baru
                                         navController.navigate("add_game")
                                     },
                                     onEditGameClick = { game ->
-                                        homeViewModel.onEditClick(game) // Set state edit
+                                        homeViewModel.onEditClick(game) // PENTING: Set gameToEdit dengan data game yang dipilih
                                         navController.navigate("add_game")
                                     }
                                 )
                             }
                         }
 
-                        // --- BAGIAN YANG DIPERBAIKI ---
+                        // --- SCREEN 3: ADD / EDIT GAME ---
                         composable("add_game") {
                             val user = googleAuthUIClient.getSignedInUser()
                             if (user != null) {
                                 AddGameScreen(
-                                    navController = navController, // 1. Pass navController
-                                    userId = user.userId,          // 2. Pass userId
-                                    onSaveClick = { game ->        // 3. Callback onSaveClick
-                                        // Panggil fungsi save di ViewModel
+                                    navController = navController,
+                                    userId = user.userId,
+                                    // [FIX UTAMA DI SINI]: Ambil data gameToEdit dari ViewModel dan kirim ke screen
+                                    gameToEdit = homeViewModel.gameToEdit,
+                                    onSaveClick = { game ->
                                         homeViewModel.saveGame(game)
                                     }
                                 )

@@ -43,7 +43,7 @@ fun HomeScreen(
     viewModel: HomeViewModel
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val categories = listOf("All", "Action", "RPG", "Strategy", "FPS", "Adventure")
+    val categories = listOf("All", "Action", "RPG", "Strategy", "FPS", "Adventure", "Sports", "Racing", "Puzzle")
 
     LaunchedEffect(key1 = userData) {
         userData?.userId?.let { viewModel.loadGames(it) }
