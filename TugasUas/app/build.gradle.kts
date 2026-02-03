@@ -70,4 +70,5 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
     implementation(libs.androidx.material.icons.extended)
+    implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
 }

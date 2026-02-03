@@ -1,9 +1,9 @@
-// alankrisnadifayana/tugas-mobile-programing/Tugas-mobile-programing-main/TugasUas/app/src/main/java/com/learn/tugasuas/data/repository/GameRepository.kt
-
 package com.learn.tugasuas.data.repository
 
+import android.net.Uri
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.storage.FirebaseStorage
 import com.learn.tugasuas.data.model.Game
 import com.learn.tugasuas.data.model.Category
 import kotlinx.coroutines.channels.awaitClose
@@ -13,6 +13,7 @@ import kotlinx.coroutines.tasks.await
 
 class GameRepository {
     private val firestore = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance() // Inisialisasi Storage
     private val gamesCollection = firestore.collection("games")
     private val categoriesCollection = firestore.collection("categories")
 
@@ -32,6 +33,24 @@ class GameRepository {
 
     suspend fun updateGame(game: Game) = gamesCollection.document(game.id).set(game).await()
     suspend fun deleteGame(gameId: String) = gamesCollection.document(gameId).delete().await()
+
+    // --- FITUR BARU: UPLOAD IMAGE ---
+    suspend fun uploadImageToStorage(imageUri: Uri): String {
+        return try {
+            // Membuat nama file unik berdasarkan waktu
+            val filename = "game_images/${System.currentTimeMillis()}.jpg"
+            val ref = storage.reference.child(filename)
+
+            // Upload file
+            ref.putFile(imageUri).await()
+
+            // Ambil URL download setelah upload selesai
+            ref.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "" // Return string kosong jika gagal
+        }
+    }
 
     // --- CATEGORY CRUD ---
     suspend fun addCategory(category: Category) {
