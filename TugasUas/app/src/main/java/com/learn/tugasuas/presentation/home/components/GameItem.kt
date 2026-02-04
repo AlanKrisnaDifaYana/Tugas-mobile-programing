@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Link // Import icon Link
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -33,14 +34,15 @@ fun GameItem(
     game: Game,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onUrlClick: (String) -> Unit, // Parameter baru untuk aksi buka link
     modifier: Modifier = Modifier
 ) {
-    // --- FITUR: GLOWING BORDER UNTUK YANG SEDANG DIMAINKAN ---
+    // Tetap menggunakan UI yang sudah ada (Glowing border)
     val cardModifier = if (game.status == "Playing") {
         modifier
             .border(
                 width = 2.dp,
-                brush = Brush.linearGradient(listOf(NeonGreen, NeonBlue)), // Efek gradasi border
+                brush = Brush.linearGradient(listOf(NeonGreen, NeonBlue)),
                 shape = RoundedCornerShape(24.dp)
             )
     } else {
@@ -50,14 +52,13 @@ fun GameItem(
     Card(
         modifier = cardModifier
             .fillMaxWidth()
-            .height(260.dp) // Tinggi disesuaikan agar muat notes
+            .height(260.dp)
             .padding(vertical = 10.dp),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Black)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // 1. Background Image Full (Poster Style)
             if (game.imageUrl.isNotEmpty()) {
                 AsyncImage(
                     model = game.imageUrl,
@@ -66,11 +67,9 @@ fun GameItem(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // Placeholder background jika tidak ada gambar
                 Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2D2D2D)))
             }
 
-            // 2. Gradient Overlay (Agar teks terbaca jelas)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -79,19 +78,17 @@ fun GameItem(
                             colors = listOf(
                                 Color.Transparent,
                                 Color.Black.copy(alpha = 0.3f),
-                                Color.Black.copy(alpha = 0.95f) // Bawah gelap pekat
+                                Color.Black.copy(alpha = 0.95f)
                             ),
                             startY = 50f
                         )
                     )
             )
 
-            // 3. Status Chip (Kiri Atas)
             Box(modifier = Modifier.padding(16.dp).align(Alignment.TopStart)) {
                 StatusChip(status = game.status)
             }
 
-            // 4. Rating (Kanan Atas)
             Row(
                 modifier = Modifier
                     .padding(16.dp)
@@ -103,7 +100,7 @@ fun GameItem(
                 Icon(
                     Icons.Default.Star,
                     contentDescription = null,
-                    tint = Color(0xFFFFD700), // Warna Emas
+                    tint = Color(0xFFFFD700),
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
@@ -115,14 +112,12 @@ fun GameItem(
                 )
             }
 
-            // 5. Informasi Game (Bagian Bawah)
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(20.dp)
                     .fillMaxWidth()
             ) {
-                // Genre
                 Text(
                     text = game.genre.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
@@ -131,7 +126,6 @@ fun GameItem(
                     letterSpacing = 1.2.sp
                 )
 
-                // Judul
                 Text(
                     text = game.title,
                     style = MaterialTheme.typography.titleLarge,
@@ -142,7 +136,6 @@ fun GameItem(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Notes / Catatan
                 if (game.notes.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
@@ -156,11 +149,27 @@ fun GameItem(
                     )
                 }
 
-                // Tombol Aksi (Edit & Delete)
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // --- TOMBOL URL (LINK) BARU ---
+                    if (game.gameUrl.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onUrlClick(game.gameUrl) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Link,
+                                contentDescription = "Open Link",
+                                tint = NeonBlue, // Warna biru neon agar terlihat kontras
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
                     IconButton(onClick = onEditClick, modifier = Modifier.size(32.dp)) {
                         Icon(
                             Icons.Default.Edit,

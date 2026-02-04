@@ -1,11 +1,7 @@
 package com.learn.tugasuas.presentation.add_game
 
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,8 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Link // Icon untuk Link
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -28,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.learn.tugasuas.data.model.Game
-import com.learn.tugasuas.data.repository.GameRepository
 import com.learn.tugasuas.ui.theme.NeonPurple
 import com.learn.tugasuas.ui.theme.SurfaceDark
 import com.learn.tugasuas.ui.theme.TextGray
@@ -45,16 +39,14 @@ fun AddGameScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repository = remember { GameRepository() }
 
     // --- STATE DATA ---
     var title by remember { mutableStateOf(gameToEdit?.title ?: "") }
 
-    // State untuk Gambar
+    // State untuk Gambar (Hanya URL Teks)
     var imageUrl by remember { mutableStateOf(gameToEdit?.imageUrl ?: "") }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // State untuk Link Game (Steam/Web) -> FITUR YANG DIMINTA
+    // State untuk Link Game
     var gameUrl by remember { mutableStateOf(gameToEdit?.gameUrl ?: "") }
 
     var rating by remember { mutableIntStateOf(gameToEdit?.rating ?: 0) }
@@ -75,17 +67,6 @@ fun AddGameScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     val screenTitle = if (gameToEdit != null) "Edit Game" else "Add New Game"
-
-    // Launcher Galeri
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri ->
-            if (uri != null) {
-                selectedImageUri = uri
-                imageUrl = "Image selected from Gallery"
-            }
-        }
-    )
 
     BackHandler { showDiscardDialog = true }
 
@@ -130,25 +111,13 @@ fun AddGameScreen(
                     )
                 )
 
-                // 2. Image URL / Gallery
+                // 2. Image URL (Fitur Galeri Dihapus)
                 OutlinedTextField(
                     value = imageUrl,
-                    onValueChange = {
-                        imageUrl = it
-                        selectedImageUri = null
-                    },
-                    label = { Text("Image URL or Select from Gallery") },
+                    onValueChange = { imageUrl = it },
+                    label = { Text("Image URL") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        }) {
-                            Icon(Icons.Default.Image, contentDescription = "Pick Image", tint = NeonPurple)
-                        }
-                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = NeonPurple, unfocusedBorderColor = Color.Gray,
                         focusedTextColor = TextWhite, unfocusedTextColor = TextWhite,
@@ -156,7 +125,7 @@ fun AddGameScreen(
                     )
                 )
 
-                // 3. Game URL (Link Steam/Website) - FITUR BARU
+                // 3. Game URL
                 OutlinedTextField(
                     value = gameUrl,
                     onValueChange = { gameUrl = it },
@@ -173,12 +142,11 @@ fun AddGameScreen(
                     )
                 )
 
-                // 4. Genre & Status (Sejajar)
+                // 4. Genre & Status
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Genre
                     ExposedDropdownMenuBox(
                         expanded = expandedGenre,
                         onExpandedChange = { expandedGenre = !expandedGenre },
@@ -211,7 +179,6 @@ fun AddGameScreen(
                         }
                     }
 
-                    // Status
                     ExposedDropdownMenuBox(
                         expanded = expandedStatus,
                         onExpandedChange = { expandedStatus = !expandedStatus },
@@ -324,15 +291,7 @@ fun AddGameScreen(
                             isLoading = true
 
                             scope.launch {
-                                // Logic Upload Gambar (tetap ada)
-                                val finalImageUrl = if (selectedImageUri != null) {
-                                    val uploadedUrl = repository.uploadImageToStorage(selectedImageUri!!)
-                                    if (uploadedUrl.isNotEmpty()) uploadedUrl else imageUrl
-                                } else {
-                                    imageUrl
-                                }
-
-                                // Membuat Object Game dengan gameUrl
+                                // Logic penyimpanan langsung menggunakan imageUrl dari teks
                                 val idToUse = gameToEdit?.id ?: System.currentTimeMillis().toString()
                                 val newGame = Game(
                                     id = idToUse,
@@ -342,8 +301,8 @@ fun AddGameScreen(
                                     status = status,
                                     rating = rating,
                                     notes = notes,
-                                    imageUrl = finalImageUrl,
-                                    gameUrl = gameUrl // <--- MENYIMPAN LINK GAME
+                                    imageUrl = imageUrl,
+                                    gameUrl = gameUrl
                                 )
 
                                 onSaveClick(newGame)

@@ -1,5 +1,6 @@
 package com.learn.tugasuas.presentation.home
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -22,6 +23,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler // Import untuk handle URI
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,8 +51,8 @@ fun HomeScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val categories = listOf("All", "Action", "RPG", "Strategy", "FPS", "Adventure", "Sports", "Racing", "Puzzle")
 
-    // --- STATE UNTUK DIALOG DELETE ---
-    // Menyimpan game mana yang sedang ingin dihapus. Jika null, dialog tidak muncul.
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current // Handler untuk membuka link di browser
     var gameToDelete by remember { mutableStateOf<Game?>(null) }
 
     LaunchedEffect(key1 = userData) {
@@ -59,7 +62,6 @@ fun HomeScreen(
     Scaffold(
         containerColor = BackgroundDark,
         floatingActionButton = {
-            // Glowing FAB
             Box(contentAlignment = Alignment.Center) {
                 Box(
                     modifier = Modifier
@@ -88,7 +90,6 @@ fun HomeScreen(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            // Background Blobs
             Box(
                 modifier = Modifier.offset(x = (-80).dp, y = (-80).dp).size(300.dp)
                     .background(Brush.radialGradient(listOf(NeonPurple.copy(alpha = 0.15f), Color.Transparent)))
@@ -99,7 +100,6 @@ fun HomeScreen(
             )
 
             Column(modifier = Modifier.fillMaxSize()) {
-                // Header Profil
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -125,7 +125,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Search Bar
                 TextField(
                     value = state.searchQuery,
                     onValueChange = { viewModel.onSearchQueryChange(it) },
@@ -144,7 +143,6 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Category Filter
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(horizontal = 24.dp),
@@ -171,7 +169,6 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Game List
                 Box(modifier = Modifier.fillMaxSize()) {
                     if (state.isLoading) {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = NeonPurple)
@@ -193,10 +190,16 @@ fun HomeScreen(
                             items(items = state.games, key = { it.id }) { game ->
                                 GameItem(
                                     game = game,
-                                    // SAAT TOMBOL DELETE DI KLIK, JANGAN LANGSUNG HAPUS.
-                                    // TAPI SIMPAN GAME KE VARIABEL 'gameToDelete' UNTUK MEMUNCULKAN DIALOG
                                     onDeleteClick = { gameToDelete = game },
-                                    onEditClick = { onEditGameClick(game) }
+                                    onEditClick = { onEditGameClick(game) },
+                                    // IMPLEMENTASI AKSI BUKA URL
+                                    onUrlClick = { url ->
+                                        try {
+                                            uriHandler.openUri(url)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, "Cannot open link", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
                                 )
                             }
                         }
@@ -204,7 +207,6 @@ fun HomeScreen(
                 }
             }
 
-            // --- DIALOG KONFIRMASI DELETE ---
             if (gameToDelete != null) {
                 AlertDialog(
                     onDismissRequest = { gameToDelete = null },
@@ -217,9 +219,8 @@ fun HomeScreen(
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                // Hapus game
                                 gameToDelete?.id?.let { viewModel.deleteGame(it) }
-                                gameToDelete = null // Tutup dialog
+                                gameToDelete = null
                             }
                         ) {
                             Text("Yes, Delete", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
